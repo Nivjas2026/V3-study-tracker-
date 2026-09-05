@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Inter Study Planner</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#D9902E">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CA Planner">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F1;
+    --ink:#211F1C;
+    --ink-soft:#5B564C;
+    --line:#E5DDCB;
+    --card:#FFFFFF;
+    --marigold:#D9902E;
+    --marigold-deep:#B5721E;
+    --teal:#2F6F62;
+    --teal-soft:#E4F1EC;
+    --rust:#B14B3A;
+    --rust-soft:#F6E5E1;
+    --amber-soft:#FBEDD8;
+    --slate:#3A4A5C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:74px;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',serif;}
+  #app{max-width:480px; margin:0 auto; min-height:100vh; position:relative;}
+
+  /* ---- top bar ---- */
+  .topbar{padding:20px 18px 14px; border-bottom:1px solid var(--line); background:var(--paper); position:sticky; top:0; z-index:5;}
+  .topbar .date{font-size:13px; color:var(--ink-soft); letter-spacing:.02em;}
+  .topbar h1{font-size:26px; margin:2px 0 0; font-weight:700; line-height:1.15;}
+
+  .screen{padding:16px 16px 24px; display:none;}
+  .screen.active{display:block;}
+
+  /* ---- cards ---- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .card h3{margin:0 0 10px; font-size:16px; font-weight:600;}
+  .row{display:flex; align-items:center; justify-content:space-between;}
+  .muted{color:var(--ink-soft); font-size:13px;}
+
+  /* ---- home ring/progress ---- */
+  .progress-wrap{display:flex; align-items:center; gap:18px;}
+  .ring{width:92px; height:92px; flex-shrink:0;}
+  .ring-num{font-size:20px; font-weight:700; font-family:'Fraunces',serif;}
+  .stat-line{display:flex; justify-content:space-between; font-size:14px; padding:6px 0; border-bottom:1px dashed var(--line);}
+  .stat-line:last-child{border-bottom:none;}
+
+  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:.01em;}
+  .pill.done{background:var(--teal-soft); color:var(--teal);}
+  .pill.progress{background:var(--amber-soft); color:var(--marigold-deep);}
+  .pill.notstarted{background:#EEE9DE; color:var(--ink-soft);}
+  .pill.skipped{background:var(--rust-soft); color:var(--rust);}
+
+  .task-item{border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--card);}
+  .task-item .top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .task-item .time{font-size:12.5px; color:var(--ink-soft); font-weight:600;}
+  .task-item .subj{font-size:15px; font-weight:600; margin-top:2px;}
+  .task-item .desc{font-size:13.5px; color:var(--ink-soft); margin-top:2px;}
+  .task-actions{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .chip-btn{border:1px solid var(--line); background:var(--paper); border-radius:8px; padding:5px 9px; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+  .chip-btn.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  .empty{text-align:center; padding:30px 10px; color:var(--ink-soft);}
+  .empty .big{font-size:32px; margin-bottom:6px;}
+
+  /* ---- nav ---- */
+  nav{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--line); display:flex; z-index:20; max-width:480px; margin:0 auto;}
+  nav button{flex:1; background:none; border:none; padding:9px 2px 8px; font-family:'Inter',sans-serif; font-size:10.5px; font-weight:600; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer;}
+  nav button .ic{font-size:19px;}
+  nav button.active{color:var(--marigold-deep);}
+
+  .fab{position:fixed; bottom:84px; right:calc(50% - 240px + 18px); width:54px; height:54px; border-radius:50%; background:var(--marigold); color:#fff; font-size:28px; border:none; box-shadow:0 6px 16px rgba(217,144,46,.4); cursor:pointer; z-index:19; display:flex; align-items:center; justify-content:center;}
+  @media (max-width:519px){ .fab{right:18px;} }
+
+  /* ---- syllabus ---- */
+  .paper-card{margin-bottom:12px;}
+  .paper-head{display:flex; justify-content:space-between; align-items:center; cursor:pointer;}
+  .paper-head .pname{font-size:15.5px; font-weight:700;}
+  .bar-bg{background:#EFE9DB; border-radius:6px; height:7px; margin-top:8px; overflow:hidden;}
+  .bar-fill{background:var(--teal); height:100%; border-radius:6px;}
+  .chapters{margin-top:12px; display:none;}
+  .chapters.open{display:block;}
+  .chapter-row{padding:10px 0; border-top:1px solid var(--line);}
+  .chapter-row .cname{font-size:13.5px; font-weight:600;}
+  .stage-row{display:flex; gap:6px; margin-top:7px; flex-wrap:wrap;}
+  .stage-tag{font-size:11px; padding:4px 8px; border-radius:7px; border:1px solid var(--line); cursor:pointer; color:var(--ink-soft); font-weight:600;}
+  .stage-tag.on{background:var(--teal); color:#fff; border-color:var(--teal);}
+
+  /* ---- modal ---- */
+  .overlay{position:fixed; inset:0; background:rgba(33,31,28,.45); z-index:30; display:none; align-items:flex-end;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--paper); width:100%; max-width:480px; margin:0 auto; border-radius:18px 18px 0 0; padding:18px 18px 26px; max-height:88vh; overflow-y:auto;}
+  .sheet h3{margin-top:0;}
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin:12px 0 5px;}
+  input,select,textarea{width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:9px; font-family:'Inter',sans-serif; font-size:14px; background:#fff; color:var(--ink);}
+  textarea{resize:vertical; min-height:56px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .btn{display:block; width:100%; padding:12px; border-radius:10px; border:none; font-weight:700; font-size:14.5px; cursor:pointer; margin-top:16px;}
+  .btn.primary{background:var(--marigold); color:#fff;}
+  .btn.ghost{background:none; border:1px solid var(--line); color:var(--ink); margin-top:8px;}
+  .btn.danger{background:var(--rust-soft); color:var(--rust); margin-top:8px;}
+  .close-x{position:absolute; top:14px; right:16px; font-size:20px; background:none; border:none; color:var(--ink-soft); cursor:pointer;}
+
+  /* ---- timer ---- */
+  .timer-display{text-align:center; padding:30px 0 10px;}
+  .timer-display .t{font-family:'Fraunces',serif; font-size:54px; font-weight:600;}
+  .timer-modes{display:flex; gap:8px; justify-content:center; margin:14px 0;}
+  .mode-btn{padding:7px 12px; border-radius:20px; border:1px solid var(--line); background:#fff; font-size:12.5px; font-weight:600; cursor:pointer;}
+  .mode-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .timer-controls{display:flex; gap:10px; justify-content:center; margin-top:10px;}
+  .round-btn{width:64px; height:64px; border-radius:50%; border:none; font-size:22px; cursor:pointer;}
+  .round-btn.start{background:var(--teal); color:#fff;}
+  .round-btn.stop{background:var(--rust); color:#fff;}
+
+  /* ---- stats bars ---- */
+  .bar-chart{display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px;}
+  .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .bar-col .b{width:70%; background:var(--marigold); border-radius:5px 5px 0 0; min-height:3px;}
+  .bar-col .lbl{font-size:10.5px; color:var(--ink-soft); margin-top:5px;}
+  .subj-bar-row{margin-bottom:10px;}
+  .subj-bar-row .lab{display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:4px;}
+
+  /* ---- calendar ---- */
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:10px;}
+  .cal-cell{aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; cursor:pointer; background:#EFE9DB; color:var(--ink-soft);}
+  .cal-cell.today{outline:2px solid var(--ink);}
+  .cal-cell.full{background:var(--teal); color:#fff;}
+  .cal-cell.partial{background:var(--marigold); color:#fff;}
+  .cal-cell.missed{background:var(--rust-soft); color:var(--rust);}
+  .cal-dow{font-size:10.5px; text-align:center; color:var(--ink-soft); font-weight:700;}
+
+  .segmented{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:14px;}
+  .segmented button{flex:1; padding:9px; border:none; background:#fff; font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+  .segmented button.active{background:var(--ink); color:#fff;}
+
+  .goal-card{margin-bottom:10px;}
+  .goal-card .g-top{display:flex; justify-content:space-between; align-items:center;}
+  .streak-badge{display:flex; align-items:center; gap:6px; background:var(--amber-soft); color:var(--marigold-deep); padding:8px 12px; border-radius:12px; font-weight:700; font-size:14px;}
+  .achieve-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .achieve{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center;}
+  .achieve .ic{font-size:22px;}
+  .achieve .n{font-size:12.5px; font-weight:600; margin-top:4px;}
+  .toast{position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px; z-index:50; opacity:0; transition:opacity .25s; pointer-events:none;}
+  .toast.show{opacity:1;}
+  .link-btn{background:none;border:none;color:var(--marigold-deep);font-weight:700;font-size:13px;cursor:pointer;padding:0;}
+  .rev-item{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line);}
+  .rev-item:first-child{border-top:none;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="date" id="topDate">Loading…</div>
+    <h1 id="topTitle">Home</h1>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="card">
+      <div class="row">
+        <h3 style="margin:0;">Today's Progress</h3>
+        <span class="streak-badge" id="streakBadge">🔥 0</span>
+      </div>
+      <div class="progress-wrap" style="margin-top:12px;">
+        <svg class="ring" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#EFE9DB" stroke-width="10"/>
+          <circle id="ringFill" cx="50" cy="50" r="42" fill="none" stroke="#2F6F62" stroke-width="10" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        </svg>
+        <div style="flex:1;">
+          <div class="stat-line"><span class="muted">Target today</span><span id="statTarget">0h</span></div>
+          <div class="stat-line"><span class="muted">Completed</span><span id="statDone">0h 0m</span></div>
+          <div class="stat-line"><span class="muted">Tasks done</span><span id="statTasks">0 / 0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="examCountdownCard" style="display:none;">
+      <div class="row">
+        <h3 style="margin:0;" id="examName">Exam</h3>
+        <span class="pill progress" id="examDays">-- days</span>
+      </div>
+    </div>
+
+    <div class="card" id="overdueCard" style="display:none;">
+      <h3>⚠️ Overdue Tasks</h3>
+      <div id="overdueList"></div>
+    </div>
+
+    <div class="card">
+      <h3>📚 Today's Plan</h3>
+      <div id="todayList"><div class="empty"><div class="big">🗓️</div>Nothing planned yet. Tap + to add a task.</div></div>
+    </div>
+
+    <div class="card" id="revDueCard" style="display:none;">
+      <h3>🔄 Revision due today</h3>
+      <div id="revDueList"></div>
+    </div>
+  </div>
+
+  <!-- PLANNER -->
+  <div class="screen" id="screen-planner">
+    <div class="segmented">
+      <button class="pdayBtn active" data-off="-1">Yesterday</button>
+      <button class="pdayBtn active" data-off="0">Today</button>
+      <button class="pdayBtn" data-off="1">Tomorrow</button>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px;">
+        <h3 style="margin:0;" id="plannerDateLabel">Today</h3>
+        <span class="muted" id="plannerCount">0 tasks</span>
+      </div>
+      <div id="plannerList"></div>
+    </div>
+  </div>
+
+  <!-- SYLLABUS -->
+  <div class="screen" id="screen-syllabus">
+    <div class="card">
+      <h3 style="margin-bottom:2px;">Overall Syllabus</h3>
+      <div class="bar-bg"><div class="bar-fill" id="overallBar" style="width:0%;"></div></div>
+      <div class="muted" style="margin-top:6px;" id="overallPct">0% complete</div>
+    </div>
+    <div id="papersList"></div>
+  </div>
+
+  <!-- TIMER -->
+  <div class="screen" id="screen-timer">
+    <div class="card">
+      <label>Subject</label>
+      <select id="timerSubject"></select>
+      <label>Chapter (optional)</label>
+      <select id="timerChapter"><option value="">— none —</option></select>
+      <div class="timer-modes">
+        <button class="mode-btn active" data-min="25">25/5</button>
+        <button class="mode-btn" data-min="50">50/10</button>
+        <button class="mode-btn" data-min="60">60/10</button>
+        <button class="mode-btn" data-min="0">Open</button>
+      </div>
+      <div class="timer-display">
+        <div class="t" id="timerClock">25:00</div>
+        <div class="muted" id="timerStatus">Ready to focus</div>
+      </div>
+      <div class="timer-controls">
+        <button class="round-btn start" id="timerStart">▶</button>
+        <button class="round-btn stop" id="timerStop" style="display:none;">■</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Recent Sessions</h3>
+      <div id="recentSessions"><div class="empty">No sessions logged yet.</div></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="screen" id="screen-stats">
+    <div class="segmented">
+      <button class="statRangeBtn active" data-range="week">This week</button>
+      <button class="statRangeBtn" data-range="month">This month</button>
+    </div>
+    <div class="card">
+      <h3 id="statsTotalLabel">Study hours</h3>
+      <div class="bar-chart" id="statsBarChart"></div>
+    </div>
+    <div class="card">
+      <h3>By Subject</h3>
+      <div id="subjectBars"></div>
+    </div>
+    <div class="card">
+      <h3>🏆 Achievements</h3>
+      <div class="achieve-grid" id="achieveGrid"></div>
+    </div>
+  </div>
+
+  <!-- MORE -->
+  <div class="screen" id="screen-more">
+    <div class="card">
+      <div class="row"><h3 style="margin:0;">🗓️ Calendar</h3><span class="muted" id="calMonthLabel"></span></div>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3 style="margin:0;">🎯 Goals</h3><button class="link-btn" onclick="openGoalModal()">Edit</button></div>
+      <div class="stat-line"><span class="muted">Daily target</span><span id="goalDaily">-</span></div>
+      <div class="stat-line"><span class="muted">Weekly goal</span><span id="goalWeekly">-</span></div>
+      <div class="stat-line"><span class="muted">Monthly goal</span><span id="goalMonthly">-</span></div>
+      <div class="stat-line"><span class="muted">Exam</span><span id="goalExam">-</span></div>
+    </div>
+
+    <div class="card">
+      <h3>🔄 Upcoming Revisions</h3>
+      <div id="revUpcoming"><div class="empty">Mark chapters complete in Syllabus to build your revision queue.</div></div>
+    </div>
+
+    <div class="card">
+      <h3>🧮 Study-Hours Calculator</h3>
+      <label>Remaining lecture/study hours</label>
+      <input type="number" id="calcRemain" placeholder="e.g. 72">
+      <label>Days remaining</label>
+      <input type="number" id="calcDays" placeholder="e.g. 30">
+      <button class="btn ghost" onclick="runCalc()">Calculate</button>
+      <div class="muted" id="calcResult" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h3>📱 Backup</h3>
+      <button class="btn ghost" onclick="exportData()">Export data (download JSON)</button>
+      <button class="btn ghost" onclick="document.getElementById('importFile').click()">Import data</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+      <button class="btn danger" onclick="resetAllData()">Reset all data</button>
+    </div>
+  </div>
+
+</div>
+
+<nav>
+  <button class="navBtn active" data-screen="home"><span class="ic">🏠</span>Home</button>
+  <button class="navBtn" data-screen="planner"><span class="ic">📅</span>Planner</button>
+  <button class="navBtn" data-screen="syllabus"><span class="ic">📚</span>Syllabus</button>
+  <button class="navBtn" data-screen="timer"><span class="ic">⏱️</span>Timer</button>
+  <button class="navBtn" data-screen="stats"><span class="ic">📊</span>Stats</button>
+  <button class="navBtn" data-screen="more"><span class="ic">⚙️</span>More</button>
+</nav>
+<button class="fab" id="fabAdd">+</button>
+<div class="toast" id="toast"></div>
+
+<!-- TASK MODAL -->
+<div class="overlay" id="taskOverlay">
+  <div class="sheet">
+    <button class="close-x" onclick="closeTaskModal()">✕</button>
+    <h3 id="taskModalTitle">Add Task</h3>
+    <label>Subject</label>
+    <select id="taskSubject"></select>
+    <label>Chapter</label>
+    <select id="taskChapter"><option value="">— general —</option></select>
+    <label>Description</label>
+    <input type="text" id="taskDesc" placeholder="e.g. SA 315 lecture + notes">
+    <label>Date</label>
+    <input type="date" id="taskDate">
+    <div class="two-col">
+      <div><label>Start</label><input type="time" id="taskStart"></div>
+      <div><label>End</label><input type="time" id="taskEnd"></div>
+    </div>
+    <label>Priority</label>
+    <select id="taskPriority">
+      <option value="high">🔴 High</option>
+      <option value="medium" selected>🟡 Medium</option>
+      <option value="low">🟢 Low</option>
+    </select>
+    <label>Notes</label>
+    <textarea id="taskNotes" placeholder="Optional notes..."></textarea>
+    <button class="btn primary" onclick="saveTask()">Save Task</button>
+    <button class="btn danger" id="deleteTaskBtn" style="display:none;" onclick="deleteCurrentTask()">Delete Task</button>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="overlay" id="goalOverlay">
+  <div class="sheet">
+    <button class="close-x" onclick="closeGoalModal()">✕</button>
+    <h3>Edit Goals</h3>
+    <label>Daily target (hours)</label>
+    <input type="number" step="0.5" id="inpDaily">
+    <label>Weekly goal (text)</label>
+    <input type="text" id="inpWeekly" placeholder="e.g. Finish 4 Audit chapters">
+    <label>Monthly goal (text)</label>
+    <input type="text" id="inpMonthly" placeholder="e.g. Complete Costing syllabus">
+    <label>Exam name</label>
+    <input type="text" id="inpExamName" placeholder="CA Intermediate — September Attempt">
+    <label>Exam date</label>
+    <input type="date" id="inpExamDate">
+    <button class="btn primary" onclick="saveGoals()">Save Goals</button>
+  </div>
+</div>
+
+<script>
+/* ================= DATA MODEL ================= */
+const DEFAULT_PAPERS = [
+  {id:'p1', name:'Paper 1 · Advanced Accounting', chapters:[
+    'Introduction to Accounting Standards','Framework for Preparation & Presentation of FS','Applicability of AS to Various Entities',
+    'AS 1–5 (Disclosure, Inventories, Cash Flow, Contingencies, Prior Period)','AS 7 & AS 9 (Construction Contracts, Revenue Recognition)',
+    'AS 10–13 (PPE, Forex, Govt Grants, Investments)','AS 14 Amalgamation','AS 15 Employee Benefits','AS 16–17 (Borrowing Costs, Segment Reporting)',
+    'AS 18–20 (Related Party, Leases, EPS)','AS 21–29 (Consolidation, Associates, Interim, JV, Impairment, Provisions)',
+    'Financial Statements of Companies','Buyback & Equity Shares with Differential Rights','Amalgamation of Companies','Internal Reconstruction',
+    'Financial Statements of Banking Companies','Financial Statements of NBFCs','Financial Statements of Insurance Companies','Consolidated Financial Statements'
+  ]},
+  {id:'p2', name:'Paper 2 · Corporate and Other Laws', chapters:[
+    'Preliminary (Companies Act)','Incorporation of Company','Prospectus and Allotment of Securities','Share Capital and Debentures',
+    'Acceptance of Deposits by Companies','Registration of Charges','Management and Administration','Declaration and Payment of Dividend',
+    'Accounts of Companies','Audit and Auditors','Companies Incorporated Outside India','General Nature of Partnership',
+    'Rights and Duties of Partners','Reconstitution of Firm','Registration and Dissolution of Firm','The LLP Act, 2008',
+    'General Clauses Act, 1897','Interpretation of Statutes'
+  ]},
+  {id:'p3', name:'Paper 3 · Taxation (Income-tax + GST)', chapters:[
+    'Basic Concepts','Residence and Scope of Total Income','Incomes Not Forming Part of Total Income','Salaries',
+    'Income from House Property','Profits and Gains of Business or Profession','Capital Gains','Income from Other Sources',
+    "Income of Other Persons Included in Assessee's Total Income",'Aggregation of Income, Set-off & Carry Forward of Losses',
+    'Deductions from Gross Total Income','Computation of Total Income and Tax Payable','Advance Tax, TDS and TCS',
+    'Provisions for Filing Return of Income','GST in India — Introduction','Supply under GST','Charge of GST','Place of Supply',
+    'Exemptions from GST','Time of Supply','Value of Supply','Input Tax Credit','Registration','Tax Invoice, Credit and Debit Notes',
+    'E-Way Bill','Payment of Tax','Returns'
+  ]},
+  {id:'p4', name:'Paper 4 · Cost and Management Accounting', chapters:[
+    'Introduction to Cost and Management Accounting','Material Cost','Employee Cost','Overheads: Absorption Costing',
+    'Activity Based Costing','Cost Sheet','Cost Accounting System','Unit & Batch Costing','Job and Process Costing',
+    'Joint Products and By-Products','Service Costing','Standard Costing','Marginal Costing','Budget and Budgetary Control'
+  ]},
+  {id:'p5', name:'Paper 5 · Auditing and Ethics', chapters:[
+    'Nature, Objective and Scope of Audit','SA 200 — Overall Objectives of Auditor','SA 210 — Agreeing Terms of Audit Engagement',
+    'SA 230 — Audit Documentation','SA 240 — Responsibility Relating to Fraud','SA 299 — Joint Audit',
+    'SA 300 / 315 / 320 — Planning, Identifying Risk, Materiality','SA 330 — Auditor\\'s Responses to Assessed Risks',
+    'SA 402 — Service Organizations','SA 450 — Evaluation of Misstatements','SA 500 — Audit Evidence',
+    'SA 501 — Specific Considerations for Selected Items','SA 505 — External Confirmations','SA 510 — Initial Engagements, Opening Balances',
+    'SA 520 — Analytical Procedures','SA 530 — Audit Sampling','SA 540 — Audit of Accounting Estimates','SA 550 — Related Parties',
+    'SA 560 — Subsequent Events','SA 570 — Going Concern','SA 580 — Written Representations','SA 600 — Using Work of Another Auditor',
+    'SA 610 — Using Work of Internal Auditors','SA 620 — Using Work of an Auditor\\'s Expert','SA 700 / 705 / 706 — Audit Report',
+    'SA 710 — Comparative Information','SA 720 — Other Information','Audit of Items of Financial Statements','Audit of Banks',
+    'Audit of Different Types of Entities','Audit Committee & Corporate Governance','Ethics and Terms of Audit Engagements'
+  ]},
+  {id:'p6', name:'Paper 6 · Financial Mgmt & Strategic Mgmt', chapters:[
+    'Scope and Objectives of Financial Management','Types of Financing','Financial Analysis — Ratio Analysis','Cost of Capital',
+    'Financing Decisions — Capital Structure','Financing Decisions — Leverage','Investment Decisions (Capital Budgeting)',
+    'Dividend Decision','Management of Working Capital','Introduction to Strategic Management','Strategic Analysis: External Environment',
+    'Strategic Analysis: Internal Environment','Strategic Choices','Strategy Implementation and Evaluation'
+  ]}
+];
+
+let DATA = {
+  papers: null,        // [{id,name,chapters:[{id,name,stages:{lecture,reading,questions,revision,tests}}]}]
+  tasks: [],           // [{id,date,subject,chapter,desc,start,end,priority,status,notes,actualMin}]
+  sessions: [],        // [{id,date,subject,chapter,minutes}]
+  goals: {daily:7, weekly:'', monthly:'', examName:'', examDate:''},
+  revisions: []        // [{id,chapterId,subject,chapterName,stage,dueDate,done}]
+};
+let editingTaskId = null;
+let timerInterval = null, timerSeconds = 0, timerMode = 25, timerRunning = false;
+let today = new Date();
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function todayStr(){ return fmtDate(new Date()); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* ================= STORAGE (browser localStorage — standalone app) ================= */
+const STORAGE_KEY = 'ca-planner-data-v1';
+async function loadAll(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ DATA = JSON.parse(raw); }
+  }catch(e){ /* no data yet, or storage unavailable */ }
+  if(!DATA.papers){
+    DATA.papers = DEFAULT_PAPERS.map(p=>({
+      id:p.id, name:p.name,
+      chapters: p.chapters.map(c=>({id:uid(), name:c, stages:{lecture:false,reading:false,questions:false,revision:false,tests:false}}))
+    }));
+  }
+  DATA.tasks = DATA.tasks || [];
+  DATA.sessions = DATA.sessions || [];
+  DATA.revisions = DATA.revisions || [];
+  DATA.goals = DATA.goals || {daily:7, weekly:'', monthly:'', examName:'', examDate:''};
+}
+async function saveAll(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
+  catch(e){ console.error('save failed', e); toast('Storage full or unavailable'); }
+}
+
+/* ================= NAV ================= */
+document.querySelectorAll('.navBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>showScreen(btn.dataset.screen));
+});
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.navBtn').forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+  const titles = {home:'Home', planner:'Planner', syllabus:'Syllabus', timer:'Timer', stats:'Stats', more:'More'};
+  document.getElementById('topTitle').textContent = titles[name];
+  if(name==='planner') renderPlanner();
+  if(name==='syllabus') renderSyllabus();
+  if(name==='timer') renderTimerScreen();
+  if(name==='stats') renderStats();
+  if(name==='more') renderMore();
+}
+document.getElementById('fabAdd').addEventListener('click', ()=>openTaskModal());
+
+/* ================= SUBJECT/CHAPTER SELECTS ================= */
+function fillSubjectSelect(sel, includeGeneral){
+  sel.innerHTML='';
+  if(includeGeneral){ const o=document.createElement('option'); o.value=''; o.textContent='General / Other'; sel.appendChild(o); }
+  DATA.papers.forEach(p=>{
+    const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; sel.appendChild(o);
+  });
+}
+function fillChapterSelect(sel, subjectId){
+  sel.innerHTML = '<option value="">— none —</option>';
+  const p = DATA.papers.find(x=>x.id===subjectId);
+  if(!p) return;
+  p.chapters.forEach(c=>{
+    const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o);
+  });
+}
+function subjectName(id){ const p=DATA.papers.find(x=>x.id===id); return p?p.name.split('·')[1]?.trim()||p.name : 'General'; }
+function chapterName(subjId, chId){
+  const p=DATA.papers.find(x=>x.id===subjId); if(!p) return '';
+  const c=p.chapters.find(x=>x.id===chId); return c?c.name:'';
+}
+
+/* ================= TASK MODAL ================= */
+function openTaskModal(task){
+  editingTaskId = task ? task.id : null;
+  document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add Task';
+  document.getElementById('deleteTaskBtn').style.display = task ? 'block' : 'none';
+  fillSubjectSelect(document.getElementById('taskSubject'), true);
+  document.getElementById('taskSubject').value = task ? task.subject : DATA.papers[0].id;
+  fillChapterSelect(document.getElementById('taskChapter'), document.getElementById('taskSubject').value);
+  if(task) document.getElementById('taskChapter').value = task.chapter||'';
+  document.getElementById('taskDesc').value = task ? task.desc : '';
+  document.getElementById('taskDate').value = task ? task.date : todayStr();
+  document.getElementById('taskStart').value = task ? task.start : '';
+  document.getElementById('taskEnd').value = task ? task.end : '';
+  document.getElementById('taskPriority').value = task ? task.priority : 'medium';
+  document.getElementById('taskNotes').value = task ? (task.notes||'') : '';
+  document.getElementById('taskOverlay').classList.add('open');
+}
+document.getElementById('taskSubject').addEventListener('change', e=>{
+  fillChapterSelect(document.getElementById('taskChapter'), e.target.value);
+});
+function closeTaskModal(){ document.getElementById('taskOverlay').classList.remove('open'); }
+function saveTask(){
+  const t = {
+    id: editingTaskId || uid(),
+    subject: document.getElementById('taskSubject').value,
+    chapter: document.getElementById('taskChapter').value,
+    desc: document.getElementById('taskDesc').value.trim(),
+    date: document.getElementById('taskDate').value || todayStr(),
+    start: document.getElementById('taskStart').value,
+    end: document.getElementById('taskEnd').value,
+    priority: document.getElementById('taskPriority').value,
+    notes: document.getElementById('taskNotes').value.trim(),
+    status: editingTaskId ? (DATA.tasks.find(x=>x.id===editingTaskId)?.status||'notstarted') : 'notstarted',
+    actualMin: editingTaskId ? (DATA.tasks.find(x=>x.id===editingTaskId)?.actualMin||0) : 0
+  };
+  if(!t.desc){ toast('Add a short description'); return; }
+  const idx = DATA.tasks.findIndex(x=>x.id===t.id);
+  if(idx>=0) DATA.tasks[idx]=t; else DATA.tasks.push(t);
+  saveAll().then(()=>{ closeTaskModal(); renderAll(); toast('Task saved'); });
+}
+function deleteCurrentTask(){
+  DATA.tasks = DATA.tasks.filter(x=>x.id!==editingTaskId);
+  saveAll().then(()=>{ closeTaskModal(); renderAll(); toast('Task deleted'); });
+}
+function cycleStatus(id){
+  const order = ['notstarted','progress','done','skipped'];
+  const t = DATA.tasks.find(x=>x.id===id); if(!t) return;
+  const i = order.indexOf(t.status);
+  t.status = order[(i+1)%order.length];
+  saveAll().then(renderAll);
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const dstr = todayStr();
+  document.getElementById('topDate').textContent = today.toLocaleDateString('en-IN',{weekday:'long', day:'numeric', month:'long'});
+  const dayTasks = DATA.tasks.filter(t=>t.date===dstr);
+  const doneCount = dayTasks.filter(t=>t.status==='done').length;
+  document.getElementById('statTasks').textContent = `${doneCount} / ${dayTasks.length}`;
+
+  const target = parseFloat(DATA.goals.daily)||0;
+  const minsToday = DATA.sessions.filter(s=>s.date===dstr).reduce((a,b)=>a+b.minutes,0);
+  const hrs = Math.floor(minsToday/60), mins = minsToday%60;
+  document.getElementById('statTarget').textContent = target+'h';
+  document.getElementById('statDone').textContent = `${hrs}h ${mins}m`;
+  const pct = target>0 ? Math.min(100, Math.round((minsToday/60/target)*100)) : 0;
+  const circumference = 2*Math.PI*42;
+  const fill = document.getElementById('ringFill');
+  fill.setAttribute('stroke-dasharray', circumference);
+  fill.setAttribute('stroke-dashoffset', circumference - (pct/100)*circumference);
+
+  document.getElementById('streakBadge').textContent = '🔥 '+computeStreak();
+
+  // exam countdown
+  if(DATA.goals.examDate){
+    document.getElementById('examCountdownCard').style.display='block';
+    const days = Math.ceil((new Date(DATA.goals.examDate) - new Date(dstr)) / 86400000);
+    document.getElementById('examName').textContent = DATA.goals.examName || 'Exam';
+    document.getElementById('examDays').textContent = days>=0 ? `⏳ ${days} days` : 'Exam passed';
+  } else {
+    document.getElementById('examCountdownCard').style.display='none';
+  }
+
+  // overdue
+  const overdue = DATA.tasks.filter(t=>t.date<dstr && t.status!=='done' && t.status!=='skipped');
+  const oCard = document.getElementById('overdueCard');
+  if(overdue.length){
+    oCard.style.display='block';
+    document.getElementById('overdueList').innerHTML = overdue.map(t=>`
+      <div class="task-item">
+        <div class="top"><div><div class="subj">${subjectName(t.subject)}</div><div class="desc">${t.desc}</div></div><span class="pill notstarted">${t.date}</span></div>
+        <div class="task-actions">
+          <button class="chip-btn" onclick="moveToToday('${t.id}')">Move to today</button>
+          <button class="chip-btn" onclick="openTaskModal(DATA.tasks.find(x=>x.id==='${t.id}'))">Edit</button>
+        </div>
+      </div>`).join('');
+  } else { oCard.style.display='none'; }
+
+  // today list
+  const listEl = document.getElementById('todayList');
+  if(dayTasks.length===0){
+    listEl.innerHTML = `<div class="empty"><div class="big">🗓️</div>Nothing planned yet. Tap + to add a task.</div>`;
+  } else {
+    listEl.innerHTML = dayTasks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(taskHTML).join('');
+  }
+
+  // revisions due today
+  const dueToday = DATA.revisions.filter(r=>!r.done && r.dueDate<=dstr);
+  const revCard = document.getElementById('revDueCard');
+  if(dueToday.length){
+    revCard.style.display='block';
+    document.getElementById('revDueList').innerHTML = dueToday.map(r=>`
+      <div class="rev-item"><div><div style="font-weight:600; font-size:13.5px;">${r.chapterName}</div><div class="muted">${subjectName(r.subject)} · ${r.stage}</div></div>
+      <button class="chip-btn" onclick="markRevisionDone('${r.id}')">Done</button></div>`).join('');
+  } else { revCard.style.display='none'; }
+}
+function moveToToday(id){
+  const t = DATA.tasks.find(x=>x.id===id); if(!t) return;
+  t.date = todayStr(); saveAll().then(renderAll); toast('Moved to today');
+}
+function taskHTML(t){
+  const statusLabel = {notstarted:'⬜ Not started', progress:'🟡 In progress', done:'✅ Completed', skipped:'❌ Skipped'};
+  const pillClass = {notstarted:'notstarted', progress:'progress', done:'done', skipped:'skipped'};
+  const timeStr = (t.start||t.end) ? `${t.start||'--:--'} – ${t.end||'--:--'}` : 'No time set';
+  return `<div class="task-item">
+    <div class="top">
+      <div><div class="time">${timeStr}</div><div class="subj">${subjectName(t.subject)}${t.chapter?(' · '+chapterName(t.subject,t.chapter)):''}</div><div class="desc">${t.desc}</div></div>
+      <span class="pill ${pillClass[t.status]}">${statusLabel[t.status].split(' ')[0]}</span>
+    </div>
+    <div class="task-actions">
+      <button class="chip-btn" onclick="cycleStatus('${t.id}')">Cycle status</button>
+      <button class="chip-btn" onclick='openTaskModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Edit</button>
+    </div>
+  </div>`;
+}
+
+/* ================= PLANNER ================= */
+let plannerOffset = 0;
+document.querySelectorAll('.pdayBtn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.pdayBtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    plannerOffset = parseInt(b.dataset.off);
+    renderPlanner();
+  });
+});
+function renderPlanner(){
+  const d = new Date(); d.setDate(d.getDate()+plannerOffset);
+  const dstr = fmtDate(d);
+  document.getElementById('plannerDateLabel').textContent = d.toLocaleDateString('en-IN',{weekday:'short', day:'numeric', month:'short'});
+  const list = DATA.tasks.filter(t=>t.date===dstr).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  document.getElementById('plannerCount').textContent = list.length+' tasks';
+  document.getElementById('plannerList').innerHTML = list.length ? list.map(taskHTML).join('') : `<div class="empty"><div class="big">📋</div>No tasks for this day.</div>`;
+}
+
+/* ================= SYLLABUS ================= */
+function chapterPct(c){
+  const vals = Object.values(c.stages);
+  return Math.round((vals.filter(Boolean).length/vals.length)*100);
+}
+function paperPct(p){
+  if(!p.chapters.length) return 0;
+  return Math.round(p.chapters.reduce((a,c)=>a+chapterPct(c),0)/p.chapters.length);
+}
+function renderSyllabus(){
+  const overall = Math.round(DATA.papers.reduce((a,p)=>a+paperPct(p),0)/DATA.papers.length);
+  document.getElementById('overallBar').style.width = overall+'%';
+  document.getElementById('overallPct').textContent = overall+'% complete';
+
+  document.getElementById('papersList').innerHTML = DATA.papers.map(p=>{
+    const pct = paperPct(p);
+    return `<div class="card paper-card">
+      <div class="paper-head" onclick="toggleChapters('${p.id}')">
+        <div style="flex:1;"><div class="pname">${p.name}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;"></div></div></div>
+        <span class="muted" style="margin-left:10px;">${pct}%</span>
+      </div>
+      <div class="chapters" id="ch-${p.id}">
+        ${p.chapters.map(c=>chapterRowHTML(p.id,c)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleChapters(pid){
+  document.getElementById('ch-'+pid).classList.toggle('open');
+}
+function chapterRowHTML(pid, c){
+  const stages = [['lecture','📺 Lecture'],['reading','📖 Reading'],['questions','✍️ Questions'],['revision','🔄 Revision'],['tests','📝 Tests']];
+  return `<div class="chapter-row">
+    <div class="row"><span class="cname">${c.name}</span><span class="muted">${chapterPct(c)}%</span></div>
+    <div class="stage-row">
+      ${stages.map(([k,label])=>`<span class="stage-tag ${c.stages[k]?'on':''}" onclick="toggleStage('${pid}','${c.id}','${k}')">${label}</span>`).join('')}
+    </div>
+  </div>`;
+}
+function toggleStage(pid, cid, stage){
+  const p = DATA.papers.find(x=>x.id===pid); const c = p.chapters.find(x=>x.id===cid);
+  const wasComplete = Object.values(c.stages).every(Boolean);
+  c.stages[stage] = !c.stages[stage];
+  const nowComplete = Object.values(c.stages).every(Boolean);
+  if(!wasComplete && nowComplete){
+    scheduleRevisions(pid, c);
+    toast('Chapter complete — revision scheduled 🎉');
+  }
+  saveAll().then(renderSyllabus);
+}
+function scheduleRevisions(pid, chapter){
+  const base = new Date();
+  const plans = [['1st revision',1],['2nd revision',7],['3rd revision',21]];
+  plans.forEach(([label, days])=>{
+    const d = new Date(base); d.setDate(d.getDate()+days);
+    DATA.revisions.push({id:uid(), chapterId:chapter.id, subject:pid, chapterName:chapter.name, stage:label, dueDate:fmtDate(d), done:false});
+  });
+}
+function markRevisionDone(id){
+  const r = DATA.revisions.find(x=>x.id===id); if(r) r.done=true;
+  saveAll().then(renderAll); toast('Revision marked done');
+}
+
+/* ================= TIMER ================= */
+function renderTimerScreen(){
+  fillSubjectSelect(document.getElementById('timerSubject'), false);
+  fillChapterSelect(document.getElementById('timerChapter'), document.getElementById('timerSubject').value);
+  renderRecentSessions();
+}
+document.getElementById('timerSubject').addEventListener('change', e=>{
+  fillChapterSelect(document.getElementById('timerChapter'), e.target.value);
+});
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    if(timerRunning) return;
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    timerMode = parseInt(b.dataset.min);
+    timerSeconds = timerMode*60;
+    updateTimerClock();
+  });
+});
+function updateTimerClock(){
+  const m = Math.floor(Math.abs(timerSeconds)/60), s = Math.abs(timerSeconds)%60;
+  document.getElementById('timerClock').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+timerSeconds = 25*60; updateTimerClock();
+document.getElementById('timerStart').addEventListener('click', ()=>{
+  timerRunning = true;
+  document.getElementById('timerStart').style.display='none';
+  document.getElementById('timerStop').style.display='flex';
+  document.getElementById('timerStatus').textContent = 'Focusing…';
+  window._timerStartAt = Date.now();
+  window._timerStartSeconds = timerSeconds;
+  timerInterval = setInterval(()=>{
+    if(timerMode===0){ timerSeconds++; } else { timerSeconds--; }
+    if(timerMode!==0 && timerSeconds<=0){ finishTimer(); return; }
+    updateTimerClock();
+  },1000);
+});
+document.getElementById('timerStop').addEventListener('click', finishTimer);
+function finishTimer(){
+  clearInterval(timerInterval);
+  timerRunning = false;
+  document.getElementById('timerStart').style.display='flex';
+  document.getElementById('timerStop').style.display='none';
+  document.getElementById('timerStatus').textContent = 'Ready to focus';
+  const elapsedSec = timerMode===0 ? timerSeconds : (window._timerStartSeconds - timerSeconds);
+  const minutes = Math.max(1, Math.round(elapsedSec/60));
+  const subj = document.getElementById('timerSubject').value;
+  const chap = document.getElementById('timerChapter').value;
+  if(subj){
+    DATA.sessions.push({id:uid(), date:todayStr(), subject:subj, chapter:chap, minutes});
+    saveAll().then(()=>{ renderAll(); renderRecentSessions(); });
+    toast(`Logged ${minutes} min`);
+  }
+  timerSeconds = timerMode===0? 0 : timerMode*60;
+  updateTimerClock();
+}
+function renderRecentSessions(){
+  const list = DATA.sessions.slice(-8).reverse();
+  document.getElementById('recentSessions').innerHTML = list.length ? list.map(s=>`
+    <div class="stat-line"><span>${subjectName(s.subject)}${s.chapter?(' · '+chapterName(s.subject,s.chapter)):''}</span><span class="muted">${s.minutes}m · ${s.date}</span></div>
+  `).join('') : `<div class="empty">No sessions logged yet.</div>`;
+}
+
+/* ================= STATS ================= */
+let statRange = 'week';
+document.querySelectorAll('.statRangeBtn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.statRangeBtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); statRange = b.dataset.range; renderStats();
+  });
+});
+function renderStats(){
+  const days = statRange==='week'?7:30;
+  const arr = [];
+  for(let i=days-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); arr.push(fmtDate(d)); }
+  const perDay = arr.map(ds=>DATA.sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0));
+  const max = Math.max(60, ...perDay);
+  document.getElementById('statsTotalLabel').textContent = `Study minutes — last ${days} days (total ${perDay.reduce((a,b)=>a+b,0)} min)`;
+  document.getElementById('statsBarChart').innerHTML = arr.map((ds,i)=>{
+    const d = new Date(ds);
+    const h = Math.max(3, Math.round((perDay[i]/max)*100));
+    return `<div class="bar-col"><div class="b" style="height:${h}%;"></div><div class="lbl">${days===7? d.toLocaleDateString('en-IN',{weekday:'narrow'}) : (i%5===0? d.getDate():'')}</div></div>`;
+  }).join('');
+
+  const bySubj = {};
+  DATA.papers.forEach(p=>bySubj[p.id]=0);
+  DATA.sessions.filter(s=>arr.includes(s.date)).forEach(s=>{ bySubj[s.subject]=(bySubj[s.subject]||0)+s.minutes; });
+  const totalMin = Object.values(bySubj).reduce((a,b)=>a+b,0) || 1;
+  document.getElementById('subjectBars').innerHTML = DATA.papers.map(p=>{
+    const m = bySubj[p.id]||0; const pct = Math.round((m/totalMin)*100);
+    return `<div class="subj-bar-row"><div class="lab"><span>${p.name.split('·')[1].trim()}</span><span>${Math.floor(m/60)}h ${m%60}m</span></div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%; background:var(--marigold);"></div></div></div>`;
+  }).join('');
+
+  renderAchievements();
+}
+function computeStreak(){
+  let streak=0;
+  for(let i=0;i<400;i++){
+    const d=new Date(); d.setDate(d.getDate()-i); const ds=fmtDate(d);
+    const mins = DATA.sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0);
+    const target = (parseFloat(DATA.goals.daily)||0)*60;
+    if(target>0 && mins>=target*0.5) streak++; else if(i===0) continue; else break;
+  }
+  return streak;
+}
+function renderAchievements(){
+  const totalMin = DATA.sessions.reduce((a,b)=>a+b.minutes,0);
+  const totalHrs = Math.floor(totalMin/60);
+  const doneTasks = DATA.tasks.filter(t=>t.status==='done').length;
+  const doneChapters = DATA.papers.reduce((a,p)=>a+p.chapters.filter(c=>Object.values(c.stages).every(Boolean)).length,0);
+  const streak = computeStreak();
+  const items = [
+    {ic:'🔥', n:streak+'-day streak', on: streak>=3},
+    {ic:'📚', n:totalHrs+' hrs studied', on: totalHrs>=10},
+    {ic:'🎯', n:doneTasks+' tasks done', on: doneTasks>=10},
+    {ic:'🏆', n:doneChapters+' chapters done', on: doneChapters>=1}
+  ];
+  document.getElementById('achieveGrid').innerHTML = items.map(i=>`
+    <div class="achieve" style="opacity:${i.on?1:.45};"><div class="ic">${i.ic}</div><div class="n">${i.n}</div></div>
+  `).join('');
+}
+
+/* ================= MORE: calendar, goals, revisions, calc, backup ================= */
+let calMonth = new Date();
+function renderMore(){
+  renderCalendar();
+  document.getElementById('goalDaily').textContent = (DATA.goals.daily||0)+' hrs/day';
+  document.getElementById('goalWeekly').textContent = DATA.goals.weekly || '—';
+  document.getElementById('goalMonthly').textContent = DATA.goals.monthly || '—';
+  document.getElementById('goalExam').textContent = DATA.goals.examName ? `${DATA.goals.examName} (${DATA.goals.examDate||'no date'})` : '—';
+
+  const upcoming = DATA.revisions.filter(r=>!r.done).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,10);
+  document.getElementById('revUpcoming').innerHTML = upcoming.length ? upcoming.map(r=>`
+    <div class="rev-item"><div><div style="font-weight:600; font-size:13.5px;">${r.chapterName}</div><div class="muted">${subjectName(r.subject)} · ${r.stage} · due ${r.dueDate}</div></div>
+    <button class="chip-btn" onclick="markRevisionDone('${r.id}')">Done</button></div>`).join('')
+    : `<div class="empty">Mark chapters complete in Syllabus to build your revision queue.</div>`;
+}
+function renderCalendar(){
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  document.getElementById('calMonthLabel').textContent = calMonth.toLocaleDateString('en-IN',{month:'long', year:'numeric'});
+  const dows = ['S','M','T','W','T','F','S'];
+  document.getElementById('calDow').innerHTML = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  let cells = '';
+  for(let i=0;i<firstDow;i++) cells += `<div></div>`;
+  const target = (parseFloat(DATA.goals.daily)||0)*60;
+  for(let d=1; d<=daysInMonth; d++){
+    const ds = fmtDate(new Date(y,m,d));
+    const mins = DATA.sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0);
+    let cls = '';
+    if(ds===todayStr()) cls+=' today';
+    if(target>0){
+      if(mins>=target) cls+=' full';
+      else if(mins>0) cls+=' partial';
+      else if(ds<todayStr()) cls+=' missed';
+    }
+    cells += `<div class="cal-cell${cls}">${d}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML = cells;
+}
+
+function openGoalModal(){
+  document.getElementById('inpDaily').value = DATA.goals.daily||'';
+  document.getElementById('inpWeekly').value = DATA.goals.weekly||'';
+  document.getElementById('inpMonthly').value = DATA.goals.monthly||'';
+  document.getElementById('inpExamName').value = DATA.goals.examName||'';
+  document.getElementById('inpExamDate').value = DATA.goals.examDate||'';
+  document.getElementById('goalOverlay').classList.add('open');
+}
+function closeGoalModal(){ document.getElementById('goalOverlay').classList.remove('open'); }
+function saveGoals(){
+  DATA.goals = {
+    daily: parseFloat(document.getElementById('inpDaily').value)||0,
+    weekly: document.getElementById('inpWeekly').value.trim(),
+    monthly: document.getElementById('inpMonthly').value.trim(),
+    examName: document.getElementById('inpExamName').value.trim(),
+    examDate: document.getElementById('inpExamDate').value
+  };
+  saveAll().then(()=>{ closeGoalModal(); renderAll(); toast('Goals saved'); });
+}
+function runCalc(){
+  const remain = parseFloat(document.getElementById('calcRemain').value);
+  const days = parseFloat(document.getElementById('calcDays').value);
+  if(!remain || !days){ document.getElementById('calcResult').textContent='Enter both values.'; return; }
+  document.getElementById('calcResult').textContent = `🎯 You need approximately ${(remain/days).toFixed(2)} hrs/day to finish on time.`;
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='ca-planner-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('importFile').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{ DATA = JSON.parse(ev.target.result); saveAll().then(()=>{ renderAll(); toast('Data imported'); }); }
+    catch(err){ toast('Invalid file'); }
+  };
+  reader.readAsText(file);
+});
+function resetAllData(){
+  if(!confirm('This will erase all your planner data. Continue?')) return;
+  DATA = {papers:null, tasks:[], sessions:[], goals:{daily:7, weekly:'', monthly:'', examName:'', examDate:''}, revisions:[]};
+  loadAll().then(()=>{ saveAll().then(()=>{ renderAll(); toast('Data reset'); }); });
+}
+
+/* ================= RENDER ALL ================= */
+function renderAll(){
+  renderHome();
+  if(document.getElementById('screen-planner').classList.contains('active')) renderPlanner();
+  if(document.getElementById('screen-syllabus').classList.contains('active')) renderSyllabus();
+  if(document.getElementById('screen-stats').classList.contains('active')) renderStats();
+  if(document.getElementById('screen-more').classList.contains('active')) renderMore();
+}
+
+/* ================= INIT ================= */
+loadAll().then(()=>{
+  renderAll();
+});
+
+/* ================= PWA: service worker registration ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.log('SW registration failed', err));
+  });
+}
+</script>
+</body>
+</html>
